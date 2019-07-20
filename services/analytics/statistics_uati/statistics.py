@@ -21,17 +21,22 @@ def saveFuncionarios():
   
   data = pd.read_csv('remuneracao.txt',';',encoding='iso8859_1', decimal=',')
   try:
-    db['funcionarios-'+monthYear].drop()
+    db['funcionarios'].drop()
   except BaseException as err:
     print(err)
+  
+  funcBlock = []
   for _, row in data.iterrows():
-    db['funcionarios-'+monthYear].insert_one({
+    funcBlock.append({
       'nome': row[data.iloc[:,0].name],
       'cargo': row[data.iloc[:,1].name],
       'orgao': row[data.iloc[:,2].name],
       'remuneracao': row[data.iloc[:,3].name]
     })
-
+    if(len(funcBlock) == 10000):
+      db['funcionarios'].insert_many(funcBlock)
+      funcBlock = []
+      
 def getStatistics():
   data = pd.read_csv('remuneracao.txt',';',encoding='iso8859_1', decimal=',')
   dryData = data.drop([data.iloc[:,0].name,data.iloc[:,4].name,data.iloc[:,5].name,data.iloc[:,6].name,data.iloc[:,7].name,data.iloc[:,8].name,data.iloc[:,9].name,data.iloc[:,-1].name],axis=1)
