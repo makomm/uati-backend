@@ -10,6 +10,8 @@ func ApplyRoutes(r *gin.RouterGroup) {
 	{
 		auth.POST("", login)
 		auth.POST("/create", create)
+		auth.POST("/create-password", passwordCreation)
+		auth.POST("/reset-password", passwordReset)
 		auth.GET("", list)
 		auth.GET("/:id", read)
 		auth.DELETE("/:id", remove)
