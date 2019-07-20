@@ -45,7 +45,7 @@ def getStatistics():
   dryData = data.drop([data.iloc[:,0].name,data.iloc[:,4].name,data.iloc[:,5].name,data.iloc[:,6].name,data.iloc[:,7].name,data.iloc[:,8].name,data.iloc[:,9].name,data.iloc[:,-1].name],axis=1)
   dryData[dryData.iloc[:,2].name] = dryData[dryData.iloc[:,2].name].astype(float)
   
-  _getRemuneracaoMediaCargos(dryData)()
+  _getRemuneracaoMediaCargos(dryData)
   _getRemuneracaoMediaOrgaos(dryData)
 
 def _getRemuneracaoMediaCargos(dryData):
