@@ -3,6 +3,7 @@ package v1
 import (
 	"gitlab.com/codenation-squad-1/backend/api/v1/auth"
 	"gitlab.com/codenation-squad-1/backend/api/v1/clients"
+	"gitlab.com/codenation-squad-1/backend/api/v1/leads"
 
 	"github.com/gin-gonic/gin"
 )
@@ -13,5 +14,6 @@ func ApplyRoutes(r *gin.RouterGroup) {
 	{
 		auth.ApplyRoutes(v1)
 		clients.ApplyRoutes(v1)
+		leads.ApplyRoutes(v1)
 	}
 }
