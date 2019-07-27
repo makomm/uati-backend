@@ -110,7 +110,6 @@ func getStats(c *gin.Context) {
 	var totalAllCargos, _ = database.GetCollection(statCargos).CountDocuments(context.TODO(), bson.D{{}})
 	var totalTopOrgaos, _ = database.GetCollection(statTopOrgao).CountDocuments(context.TODO(), bson.D{{}})
 	var totalTopCargos, _ = database.GetCollection(statTopCargo).CountDocuments(context.TODO(), bson.D{{}})
-	// fmt.Println(allOrgaoTop)
 	c.JSON(200, map[string]interface{}{
 		"statistics_all": map[string]interface{}{
 			"orgaos":       allOrgaoTop,
@@ -276,7 +275,6 @@ func getLeadsInfo() LeadStats {
 }
 
 func getTopFive(entries map[string]int) []LeadType {
-	fmt.Println(entries)
 	type kv struct {
 		Key   string
 		Value int
