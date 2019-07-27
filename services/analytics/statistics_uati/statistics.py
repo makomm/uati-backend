@@ -64,8 +64,8 @@ def _getRemuneracaoMediaCargos(dryData):
   for index, row in groupCargo.describe().iterrows():
       data.append({
         'cargo': index.replace('.',''),
-        'mean': row.mean(),
-        'std': row.std(),
+        'mean': row[1],
+        'std': row[2],
         'percentil75' : row.quantile(0.75),
         'month': now.month,
         'year': now.year
@@ -83,8 +83,8 @@ def _getRemuneracaoMediaOrgaos(dryData):
   for index, row in groupOrg.describe().iterrows():
       data.append({
         'orgao': index.replace('.',''),
-        'mean': row.mean(),
-        'std': row.std(),
+        'mean': row[1],
+        'std': row[2],
         'percentil75' : row.quantile(0.75),
         'month': now.month,
         'year': now.year

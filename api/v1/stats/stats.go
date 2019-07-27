@@ -8,6 +8,6 @@ import (
 func ApplyRoutes(r *gin.RouterGroup) {
 	stats := r.Group("/stats")
 	{
-		stats.GET("/stats", getStats)
+		stats.GET("/", getStats)
 	}
 }

@@ -3,6 +3,7 @@ package stats
 import (
 	"context"
 	"fmt"
+	"math"
 	"sort"
 
 	"github.com/gin-gonic/gin"
@@ -109,7 +110,6 @@ func getStats(c *gin.Context) {
 	var totalAllCargos, _ = database.GetCollection(statCargos).CountDocuments(context.TODO(), bson.D{{}})
 	var totalTopOrgaos, _ = database.GetCollection(statTopOrgao).CountDocuments(context.TODO(), bson.D{{}})
 	var totalTopCargos, _ = database.GetCollection(statTopCargo).CountDocuments(context.TODO(), bson.D{{}})
-
 	c.JSON(200, map[string]interface{}{
 		"statistics_all": map[string]interface{}{
 			"orgaos":       allOrgaoTop,
@@ -145,6 +145,9 @@ func getTop5OrgaoByMedian() []OrgaoStats {
 	for cur.Next(context.TODO()) {
 		var orgao OrgaoStats
 		cur.Decode(&orgao)
+		if math.IsNaN(orgao.Std) {
+			orgao.Std = 0
+		}
 		result = append(result, orgao)
 	}
 	return result
@@ -167,6 +170,9 @@ func getTop5CargoByMedian() []CargoStats {
 	for cur.Next(context.TODO()) {
 		var cargo CargoStats
 		cur.Decode(&cargo)
+		if math.IsNaN(cargo.Std) {
+			cargo.Std = 0
+		}
 		result = append(result, cargo)
 	}
 	return result
@@ -269,7 +275,6 @@ func getLeadsInfo() LeadStats {
 }
 
 func getTopFive(entries map[string]int) []LeadType {
-	fmt.Println(entries)
 	type kv struct {
 		Key   string
 		Value int
