@@ -84,17 +84,26 @@ func getClients(c *gin.Context) {
 		Sort:  bson.D{{"nome", 1}},
 	}
 	var collection = database.GetCollection(clientsCollection)
-	results := make([]*Cliente, number)
+	var results []*Cliente
 	query, err := collection.Find(database.Context, bson.D{{}}, &findOptions)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Erro ao tentar consultar a base de dados")
 		log.Println(err)
 		return
 	}
-	err = query.All(database.Context, &results)
-	if err != nil {
+
+	for query.Next(database.Context) {
+		var elem Cliente
+		err := query.Decode(&elem)
+		if err != nil {
+			log.Println(err)
+		}
+		results = append(results, &elem)
+	}
+	if err := query.Err(); err != nil {
 		log.Println(err)
 	}
+
 	c.JSON(200, map[string]interface{}{
 		"clientes": results,
 	})
