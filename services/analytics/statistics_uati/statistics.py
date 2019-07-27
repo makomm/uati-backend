@@ -4,6 +4,7 @@ import pandas as pd
 import os
 from pymongo import MongoClient
 from dotenv import load_dotenv
+import numpy as np
 
 load_dotenv('.env')
 urlMongo = os.getenv('URL_MONGO')
@@ -33,11 +34,11 @@ def saveFuncionarios():
       'orgao': row[data.iloc[:,2].name],
       'remuneracao': row[data.iloc[:,3].name]
     })
-    if len(funcBlock) == 10000:
+    if len(funcBlock) > 100000:
       db['funcionarios'].insert_many(funcBlock)
       funcBlock = []
   
-  if len(funcBlock) != 0:
+  if len(funcBlock) > 0:
     db['funcionarios'].insert_many(funcBlock)
     
 def getStatistics():
@@ -47,25 +48,102 @@ def getStatistics():
   
   _getRemuneracaoMediaCargos(dryData)
   _getRemuneracaoMediaOrgaos(dryData)
+  _getTopCargos(dryData)
+  _getTopOrgaos(dryData)
+  _remuneracaoDistribution(dryData)
 
 def _getRemuneracaoMediaCargos(dryData):
   groupCargo = dryData.drop(dryData.iloc[:,1].name, axis=1).groupby(dryData.iloc[:,0].name)
   try:
-    db['statistic-cargos-' + monthYear].drop()
-  except BaseException as identifier:
-    print(identifier)
-  collection = db['statistic-cargos-' + monthYear]
+    db['statistic-cargos'].drop()
+  except BaseException as err:
+    print(err)
+  collection = db['statistic-cargos']
 
+  data = []
   for index, row in groupCargo.describe().iterrows():
-      collection.insert_one({'cargo': index.replace('.',''), 'statistc' : row[dryData.iloc[:,2].name].to_json()})
- 
+      data.append({
+        'cargo': index.replace('.',''),
+        'mean': row.mean(),
+        'std': row.std(),
+        'percentil75' : row.quantile(0.75),
+        'month': now.month,
+        'year': now.year
+      })
+  collection.insert_many(data)
+
 def _getRemuneracaoMediaOrgaos(dryData):
   groupOrg = dryData.drop(dryData.iloc[:,0].name, axis=1).groupby(dryData.iloc[:,1].name)
   try:
-    db['statistic-orgao-' + monthYear].drop()
-  except BaseException as identifier:
-    print(identifier)
-  collection = db['statistic-orgao-' + monthYear]
-
+    db['statistic-orgao'].drop()
+  except BaseException as err:
+    print(err)
+  collection = db['statistic-orgao']
+  data = []
   for index, row in groupOrg.describe().iterrows():
-      collection.insert_one({ 'orgao': index.replace('.',''), 'statistc' : row[dryData.iloc[:,2].name].to_json()})
+      data.append({
+        'orgao': index.replace('.',''),
+        'mean': row.mean(),
+        'std': row.std(),
+        'percentil75' : row.quantile(0.75),
+        'month': now.month,
+        'year': now.year
+      })
+
+  collection.insert_many(data)
+
+def _getTopCargos(dryData):
+  moreThan20 = dryData[dryData[dryData.iloc[:,2].name]>20000]
+  groupCargo = moreThan20.groupby('CARGO').count().sort_values(by=[dryData.iloc[:,1].name],ascending=False)
+  try:
+    db['statistic-top-cargo'].drop()
+  except BaseException as err:
+    print(err)
+
+  collection = db['statistic-top-cargo']
+  data = []
+  for index, row in groupCargo.iterrows():
+      data.append({ 'cargo': index.replace('.',''), 'total' : row[1].item()})
+      if len(data)>10000:
+        collection.insert_many(data)
+        data = []
+
+  if len(data) > 0:
+    collection.insert_many(data)
+
+def _getTopOrgaos(dryData):
+  moreThan20 = dryData[dryData[dryData.iloc[:,2].name]>20000]
+  groupOrgao = moreThan20.groupby(dryData.iloc[:,1].name).count().sort_values(by=['CARGO'],ascending=False)
+  try:
+    db['statistic-top-orgao'].drop()
+  except BaseException as err:
+    print(err)
+
+  collection = db['statistic-top-orgao']
+  data = []
+  for index, row in groupOrgao.iterrows():
+      data.append({ 'orgao': index.replace('.',''), 'total' : row[1].item()})
+      if len(data)>10000:
+        collection.insert_many(data)
+        data=[]
+  
+  if len(data)>0:
+    collection.insert_many(data)
+    
+
+def _remuneracaoDistribution(dryData):
+  moreThan20 = dryData[dryData[dryData.iloc[:,2].name]>20000]
+  remun = moreThan20[dryData.iloc[:,2].name]
+  (n,bins) = np.histogram(remun,bins=100,range=[20000,80000])
+  result = {
+    "bins": bins.tolist(),
+    "entries": n.tolist(),
+    "mean": remun.mean(),
+    "std": remun.std(),
+    "percentil75" : remun.quantile(0.75),
+    "month": now.month,
+    "year": now.year
+  }
+  collection = db['statistic-remuneracao-distribution']
+
+  collection.update({"month":now.month, "year": now.year},result,upsert=True)
