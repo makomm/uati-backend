@@ -179,7 +179,7 @@ func getTop5CargoByCount() []TopCargo {
 	number = 5
 	findOptions := options.FindOptions{
 		Limit: &number,
-		Sort:  bson.D{{"mean", -1}},
+		Sort:  bson.D{{"total", -1}},
 	}
 	cur, err := cargoCollection.Find(context.TODO(), bson.D{{}}, &findOptions)
 	if err != nil {
@@ -201,7 +201,7 @@ func getTop5OrgaoByCount() []TopOrgao {
 	number = 5
 	findOptions := options.FindOptions{
 		Limit: &number,
-		Sort:  bson.D{{"mean", -1}},
+		Sort:  bson.D{{"total", -1}},
 	}
 	cur, err := orgaoCollection.Find(context.TODO(), bson.D{{}}, &findOptions)
 	if err != nil {
