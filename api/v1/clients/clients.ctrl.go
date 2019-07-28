@@ -55,6 +55,7 @@ func addCSVToDatabase(c *gin.Context) {
 		return
 	}
 	log.Println("Inserted multiple documents: ", insertManyResult.InsertedIDs)
+	SendImportedClients()
 
 	c.String(http.StatusOK, fmt.Sprintf("'%s' uploaded!", file.Filename))
 }
