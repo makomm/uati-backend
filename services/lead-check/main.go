@@ -7,17 +7,23 @@ import (
     "go.mongodb.org/mongo-driver/bson"
 	"context"
 	"leads/database"
+
+	// "encoding/hex"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"html"
+	"strings"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"github.com/streadway/amqp"
 	"time"
 	"os"
 	"encoding/json"
-	"strconv"
 	
 )
 //Recipient struct for usuarios of UATI system
 type Recipient struct {
 	Email string `bson:"username"`
+	Name string `bson:"name"`
 }
 
 //Cliente struct for UATI client
@@ -47,8 +53,14 @@ type Email struct {
 	Senha     string
 	Subject   string
 }
+//Template struct
+type Template struct {
+	Name string `bson:"name"`
+	Html string `bson:"html"`
+}
 
-var limit = 2000
+
+var limit = 20000
 
 func main() {
 	err := godotenv.Load()
@@ -59,10 +71,10 @@ func main() {
 	queueListener()
 }
 
-func searchLeads(monthYear string) []Funcionario{
+func searchLeads() []Funcionario{
 	var clientes []string
 	var result []Funcionario
-	var colFuncionarios = database.GetCollection("funcionarios-" + monthYear)
+	var colFuncionarios = database.GetCollection("funcionarios")
 	var colClientes = database.GetCollection("clientes-uati")
 	findOptions := options.Find()
 	cur,err:=colClientes.Find(context.TODO(), bson.M{"lead":bson.M{"$ne":true}},findOptions)
@@ -74,10 +86,6 @@ func searchLeads(monthYear string) []Funcionario{
 		cur.Decode(&cliente)
 		clientes = append(clientes,cliente.Nome)
 	}
-	// Teste clients
-	// clientes = append(clientes,"AAIRON TELES DE CAMARGO")
-	// clientes = append(clientes,"ABARE VAZ DE LIMA")
-	// clientes = append(clientes,"ADAIR RIBEIRO JUNIOR")
 
 	cur2,err := colFuncionarios.Find(context.TODO(),bson.M{"nome":bson.M{"$in":clientes},"remuneracao":bson.M{"$gt":limit}})
 
@@ -100,24 +108,25 @@ func storeMailList(list []Funcionario) {
 	var usersCollection = database.GetCollection("usuarios")
 	var mailCollection = database.GetCollection("mail-leads")
 	var recipients []Recipient
-	var template = ""
 	usrList, err := usersCollection.Find(context.TODO(), bson.D{{}})
 	if err!= nil {
 		fmt.Println(err)
 	}
-	for _, funcionario := range list{
-		template = template + funcionario.Nome + ": " + strconv.FormatFloat(funcionario.Remuneracao, 'E', -1, 64) +"\n"
-	}
+	
 	for usrList.Next(context.TODO()){
 		var recipient Recipient
 		usrList.Decode(&recipient)
-		msgMail(recipient.Email, template)
 		recipients = append(recipients,recipient)
 	}
 	var mail = Mail{list,recipients,time.Now().String(),true}
-	_,errMail := mailCollection.InsertOne(context.TODO(), mail)
+	obj,errMail := mailCollection.InsertOne(context.TODO(), mail)
 	if errMail != nil {
 		fmt.Println(errMail)
+	}
+	oid, _ := obj.InsertedID.(primitive.ObjectID)
+	for _,rec := range recipients{
+		template:=templateLeads(oid.Hex(), rec.Name)
+		msgMail(rec.Email, template)
 	}
 }
 
@@ -161,7 +170,7 @@ func queueListener() {
 
 	go func() {
 		for d := range msgs {
-			var leads = searchLeads(string(d.Body))
+			var leads = searchLeads()
 			if len(leads) > 0 {
 				storeMailList(leads)
 			}
@@ -208,3 +217,11 @@ func msgMail(username string, template string) {
 	failOnError(err, "Failed to publish a message")
 }
 
+func templateLeads(ID string, name string) string {
+	url := os.Getenv("URL_APP")
+	var template Template
+	colTemplate := database.GetCollection("templates")
+	colTemplate.FindOne(database.Context, bson.M{"name": "new-leads"}).Decode(&template)
+	var body = strings.ReplaceAll(strings.ReplaceAll(html.UnescapeString(template.Html), "[#NAME#]", name), "[#LINK#]", url+"/lead-detail/"+ID)
+	return body
+}
