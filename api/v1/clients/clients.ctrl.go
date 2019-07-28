@@ -44,7 +44,9 @@ func addCSVToDatabase(c *gin.Context) {
 		if err != nil {
 			log.Println(err)
 		}
-		clientes = append(clientes, Cliente{Nome: item[0]})
+		cliente := Cliente{Nome: item[0]}
+		clientes = append(clientes, cliente)
+		SendCreateClient(cliente)
 	}
 
 	var collection = database.GetCollection(clientsCollection)
