@@ -290,6 +290,9 @@ func getTopFive(entries map[string]int) []LeadType {
 	sort.Slice(ss, func(i, j int) bool {
 		return ss[i].Value > ss[j].Value
 	})
+	if len(ss) > 5 {
+		ss = ss[:5]
+	}
 	for _, val := range ss {
 		results = append(results, LeadType{
 			Label:   val.Key,
