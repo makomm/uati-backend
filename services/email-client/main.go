@@ -38,8 +38,11 @@ func sendMail(recipient string, template string, login string, senha string, sub
 	// and send the email all in one step.
 	to := []string{recipient}
 	// We need to get the subject dynamically
-	msg := strings.NewReader("To: " + recipient + "\r\n" +
+	mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n";
+	msg := strings.NewReader(
+		"To: " + recipient + "\r\n" +
 		"Subject: " + subject + "\r\n" +
+		mime +
 		"\r\n" + template +
 		"\r\n")
 	err := smtp.SendMail("smtp.gmail.com:587", auth, login+"@gmail.com", to, msg)
